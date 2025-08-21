@@ -1,0 +1,33 @@
+name: Windows RDP
+
+on: workflow_dispatch   # 手动触发运行
+
+jobs:
+  build:
+    runs-on: windows-latest   # 使用 Windows Server 2022（官方 Runner）
+    timeout-minutes: 120      # 任务最长 2 小时（你可以改成 360=6 小时）
+
+    steps:
+    - name: 启用 RDP
+      run: |
+        # 设置账号密码（你可以修改）
+        net user runneradmin MyPass123! /add
+        net localgroup administrators runneradmin /add
+
+        # 开启远程桌面
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+
+        # 显示公网 IP，方便你连接
+        echo "============================="
+        echo "下面是登录信息："
+        echo "用户名: runneradmin"
+        echo "密码: MyPass123!"
+        echo "============================="
+        curl ifconfig.me
+
+    - name: 保持运行
+      run: |
+        echo "RDP 已启用，现在可以用远程桌面连接这台虚拟机。"
+        echo "任务会保持 2 小时。"
+        Start-Sleep -Seconds 21600   # 2 小时 (你可以改成 21600=6小时)
