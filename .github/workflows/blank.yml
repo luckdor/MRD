@@ -1,33 +1,38 @@
-name: Windows RDP
+name: Windows RDP with Ngrok
 
-on: workflow_dispatch   # 手动触发运行
+on: workflow_dispatch   # 手动运行
 
 jobs:
   build:
-    runs-on: windows-latest   # 使用 Windows Server 2022（官方 Runner）
-    timeout-minutes: 120      # 任务最长 2 小时（你可以改成 360=6 小时）
+    runs-on: windows-latest
+    timeout-minutes: 120  # 2小时
 
     steps:
     - name: 启用 RDP
       run: |
-        # 设置账号密码（你可以修改）
+        # 创建账号
         net user runneradmin MyPass123! /add
         net localgroup administrators runneradmin /add
 
         # 开启远程桌面
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        netsh advfirewall firewall add rule name="RDP" protocol=TCP dir=in localport=3389 action=allow
 
-        # 显示公网 IP，方便你连接
-        echo "============================="
-        echo "下面是登录信息："
-        echo "用户名: runneradmin"
-        echo "密码: MyPass123!"
-        echo "============================="
-        curl ifconfig.me
+    - name: 安装 Ngrok
+      run: |
+        Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
+        Expand-Archive ngrok.zip -DestinationPath .
+        .\ngrok\ngrok.exe authtoken $env:NGROK_AUTH_TOKEN
+
+    - name: 启动 Ngrok 隧道
+      run: |
+        Start-Process -FilePath .\ngrok\ngrok.exe -ArgumentList "tcp 3389" -WindowStyle Hidden
+        Start-Sleep -Seconds 10
+        Invoke-WebRequest -Uri "http://127.0.0.1:4040/api/tunnels" -OutFile tunnels.json
+        Get-Content tunnels.json
 
     - name: 保持运行
       run: |
-        echo "RDP 已启用，现在可以用远程桌面连接这台虚拟机。"
-        echo "任务会保持 2 小时。"
-        Start-Sleep -Seconds 7200   # 2 小时 (你可以改成 21600=6小时)
+        echo "RDP 已启用，请使用上面 Ngrok 输出的 tcp 地址连接。"
+        Start-Sleep -Seconds 7200   # 2小时
