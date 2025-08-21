@@ -30,4 +30,4 @@ jobs:
       run: |
         echo "RDP 已启用，现在可以用远程桌面连接这台虚拟机。"
         echo "任务会保持 2 小时。"
-        Start-Sleep -Seconds 21600   # 2 小时 (你可以改成 21600=6小时)
+        Start-Sleep -Seconds 7200   # 2 小时 (你可以改成 21600=6小时)
